@@ -22,16 +22,16 @@ This document details the changes made to the stealer log parser's upload functi
 
 ### Original Functions
 
-\`\`\`python
+```python
 def create_filtered_zip(source_dir, african_machines, output_zip_path):
     """
     Created one ZIP containing all African machines
     """
     # Added all African machine folders to a single ZIP
     # Returned one ZIP file path
-\`\`\`
+```
 
-\`\`\`python
+```python
 async def upload_to_spaces_with_progress(zip_path, ...):
     """
     Uploaded the single combined ZIP file
@@ -39,11 +39,11 @@ async def upload_to_spaces_with_progress(zip_path, ...):
     # Called create_filtered_zip() once
     # Uploaded one file to Spaces
     # Stored one URL in database
-\`\`\`
+```
 
 ### Database Structure (Before)
 
-\`\`\`json
+```json
 {
   "_id": "...",
   "filename": "logs.zip",
@@ -53,7 +53,7 @@ async def upload_to_spaces_with_progress(zip_path, ...):
   "total_machines": 45,
   "african_machines": 12
 }
-\`\`\`
+```
 
 ### Limitations
 
@@ -82,7 +82,7 @@ async def upload_to_spaces_with_progress(zip_path, ...):
 
 ### New Functions
 
-\`\`\`python
+```python
 def create_individual_machine_zip(machine_folder_path, output_zip_path):
     """
     Creates a ZIP file for a single machine
@@ -97,9 +97,9 @@ def create_individual_machine_zip(machine_folder_path, output_zip_path):
     # Creates one ZIP per machine
     # Preserves internal folder structure
     # Returns individual ZIP path
-\`\`\`
+```
 
-\`\`\`python
+```python
 async def upload_individual_machines_to_spaces(
     source_dir, 
     african_machines, 
@@ -122,11 +122,11 @@ async def upload_individual_machines_to_spaces(
     # Creates individual ZIPs
     # Uploads each separately
     # Returns detailed upload results
-\`\`\`
+```
 
 ### Database Structure (After)
 
-\`\`\`json
+```json
 {
   "_id": "...",
   "filename": "logs.zip",
@@ -163,7 +163,7 @@ async def upload_individual_machines_to_spaces(
     "total_size": 95000000
   }
 }
-\`\`\`
+```
 
 ---
 
@@ -174,7 +174,7 @@ async def upload_individual_machines_to_spaces(
 **Purpose**: Creates a ZIP file for a single machine folder
 
 **Implementation**:
-\`\`\`python
+```python
 def create_individual_machine_zip(machine_folder_path, output_zip_path):
     try:
         with zipfile.ZipFile(output_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -187,7 +187,7 @@ def create_individual_machine_zip(machine_folder_path, output_zip_path):
     except Exception as e:
         print(f"Error creating ZIP for {machine_folder_path}: {e}")
         return None
-\`\`\`
+```
 
 **Key Features**:
 - Preserves internal folder structure of each machine
@@ -200,7 +200,7 @@ def create_individual_machine_zip(machine_folder_path, output_zip_path):
 **Purpose**: Orchestrates the creation and upload of individual machine ZIPs
 
 **Implementation Highlights**:
-\`\`\`python
+```python
 async def upload_individual_machines_to_spaces(...):
     uploaded_machines = []
     failed_uploads = []
@@ -228,7 +228,7 @@ async def upload_individual_machines_to_spaces(...):
         })
     
     return uploaded_machines, failed_uploads
-\`\`\`
+```
 
 **Key Features**:
 - Real-time progress updates via WebSocket
@@ -241,7 +241,7 @@ async def upload_individual_machines_to_spaces(...):
 
 **Changes in `/upload` endpoint**:
 
-\`\`\`python
+```python
 # Before
 if african_machines:
     await upload_to_spaces_with_progress(
@@ -266,13 +266,13 @@ if african_machines:
         bucket_name,
         spaces_endpoint
     )
-\`\`\`
+```
 
 ### 4. Enhanced Database Storage
 
 **Changes in `raw_logs` collection**:
 
-\`\`\`python
+```python
 # Before
 raw_log_entry = {
     "filename": file.filename,
@@ -296,7 +296,7 @@ raw_log_entry = {
         "total_size": sum(m["file_size"] for m in uploaded_machines)
     }
 }
-\`\`\`
+```
 
 ---
 
@@ -340,12 +340,12 @@ raw_log_entry = {
 
 If you have existing `raw_logs` entries with the old structure:
 
-\`\`\`python
+```python
 # Old structure detection
 if "spaces_url" in raw_log and "uploaded_machines" not in raw_log:
     # This is an old-style entry with combined ZIP
     # Handle accordingly
-\`\`\`
+```
 
 ### Backward Compatibility
 
@@ -416,19 +416,19 @@ The new code doesn't break existing functionality:
 ### Storage Organization
 
 **Before**:
-\`\`\`
+```
 spaces-bucket/
   └── filtered_logs_20250122.zip (150MB)
-\`\`\`
+```
 
 **After**:
-\`\`\`
+```
 spaces-bucket/
   ├── Machine_ABC123_20250122.zip (8MB)
   ├── Machine_XYZ789_20250122.zip (12MB)
   ├── Machine_DEF456_20250122.zip (15MB)
   └── ... (individual machine ZIPs)
-\`\`\`
+```
 
 ---
 
@@ -437,28 +437,28 @@ spaces-bucket/
 ### Potential Improvements
 
 1. **Parallel Uploads**
-   \`\`\`python
+   ```python
    # Use asyncio.gather for concurrent uploads
    tasks = [upload_machine(machine) for machine in african_machines]
    results = await asyncio.gather(*tasks)
-   \`\`\`
+   ```
 
 2. **Retry Logic**
-   \`\`\`python
+   ```python
    # Automatic retry for failed uploads
    for attempt in range(3):
        if upload_success:
            break
        await asyncio.sleep(2 ** attempt)
-   \`\`\`
+   ```
 
 3. **Compression Options**
-   \`\`\`python
+   ```python
    # Allow different compression levels
    zipfile.ZIP_DEFLATED  # Current
    zipfile.ZIP_BZIP2     # Better compression
    zipfile.ZIP_LZMA      # Best compression
-   \`\`\`
+   ```
 
 4. **Upload Resumption**
    - Store partial upload state
